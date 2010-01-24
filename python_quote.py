@@ -42,6 +42,18 @@ except ImportError:
 	raise ImportError('python-memcache module is required for this module.')
 
 
+def chunk(longlist,chunksize):
+	"""
+	@longlist: list to be chunked into sizes of @chunksize
+	@chunksize: size you wish to "chunk" your list into
+	returns: a list of lists
+	"""
+	return_list = []
+	for cnt in xrange(0,( len(longlist) / chunksize ) + 1):	
+		return_list.append( longlist[cnt * chunksize:(cnt + 1) * chunksize] )
+
+	return return_list
+
 class QuoteCache(object):
 	#yahoo allows a max of 50 quote requests per GET
 	MAX_QUOTES = 50
@@ -111,10 +123,11 @@ class QuoteCache(object):
 		#grab data for stocks we don't have cached
 		#chunk our requests into 50 stocks at a time
 		if stock_miss:
-			for cnt in xrange(0,(len(stock_miss) / 50) + 1):	
+			chunked_stocks = chunk(stock_miss,50)
+			for lst in chunked_stocks:
 				try:
 					#make our list into a comma delimmited string
-					quote_string = ','.join(stock_miss[cnt*50:(cnt+1)*50]) 
+					quote_string = ','.join(lst) 
 
 					#always include symbol param for use in our Dictionary
 					url = self.yahoo_url % (quote_string,'s' + params_str)
@@ -142,18 +155,13 @@ class QuoteCache(object):
 
 		return stock_results
 
-"""
-called standalone
-"""
+	
 def main():
 	qc = QuoteCache()
 
 	#test cache hit
 	print qc.get(['KO'],['l1','a'])
 	print qc.get(['KO'],['l1','a'])
-
-	#invalid param 
-	print qc.get(['KO'],['z'])
 
 	#check chunking
 	print qc.get(["UACA","UAXS","UBCD","UBCP","UBET","UBFO","UBIX","UBMT","UBOH",
@@ -170,6 +178,9 @@ def main():
 
 	#test force refresh
 	print qc.get(['KO'],['l1','a'],True)
+
+	#invalid param 
+	print qc.get(['KO'],['z'])
 
 if __name__ == '__main__':
 	main()	

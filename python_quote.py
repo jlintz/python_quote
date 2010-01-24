@@ -15,17 +15,10 @@ This program is free software: you can redistribute it and/or modify
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+About:
+	A python module to pull quotes from Yahoo Finance and cache them using a
+	memcached backend
 
-A python module to pull quotes from Yahoo Finance and cache them using a memcached backend
-
-"""
-
-import urllib2
-import re
-import logging
-import sys
-
-"""
 TODO:
 - use get_multi to reduce memcache lookups
 - unit tests
@@ -35,6 +28,12 @@ FUTURE:
 - persistence storage (redis backend?)
 
 """
+
+import urllib2
+import re
+import logging
+import sys
+
 
 #need to test for memcache module and throw error if not found
 try:
@@ -117,7 +116,7 @@ class QuoteCache(object):
 					#make our list into a comma delimmited string
 					quote_string = ','.join(stock_miss[cnt*50:(cnt+1)*50]) 
 
-					#always include symbol param
+					#always include symbol param for use in our Dictionary
 					url = self.yahoo_url % (quote_string,'s' + params_str)
 
 					logging.debug('Fetching URL: %s' % url)

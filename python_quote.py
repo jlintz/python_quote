@@ -33,6 +33,7 @@ import urllib2
 import re
 import logging
 import sys
+import json
 
 
 #need to test for memcache module and throw error if not found
@@ -72,7 +73,7 @@ class QuoteCache(object):
 		#change level to logging.DEBUG for debug msgs
 		logging.basicConfig(filename=logfile,level=logging.INFO,format='%(asctime)s %(levelname)s %(message)s',)
 
-	def get(self,quotes,params,refresh=False):
+	def get(self,quotes,params,r_json=False,refresh=False):
 		""" 
 		The main function for pulling quotes from Yahoo Finance.  First tries to pull
 		from cache, if not, pulls quotes in groups of 50 for those not cached.
@@ -153,7 +154,10 @@ class QuoteCache(object):
 					self.cache.set(symbol + params_str,stock_dict,self.EXPIRE_TIME)
 					stock_results[symbol.upper()] = stock_dict
 
-		return stock_results
+		if r_json == True:
+			return json.dumps(stock_results)
+		else:
+			return stock_results
 
 	
 def main():
@@ -177,6 +181,10 @@ def main():
 	['l1'])
 
 	#test force refresh
+	print qc.get(['KO'],['l1','a'],False,True)
+	
+	#test json
+	print "Test JSON"
 	print qc.get(['KO'],['l1','a'],True)
 
 	#invalid param 

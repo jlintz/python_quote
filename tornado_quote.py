@@ -2,7 +2,6 @@
 """
 Modified the Hello World tornado "webapp"
 """
-
 import tornado.httpserver
 import tornado.ioloop
 import tornado.options
@@ -21,11 +20,15 @@ class MainHandler(tornado.web.RequestHandler):
 	@tornado.web.asynchronous
 	def get(self):
 		qc = python_quote.QuoteCache()
-		quotes = self.get_argument("quotes").encode( "utf-8" )
-		quotes = list(quotes.split(","))
-		results = qc.get(quotes,['l1','a'],True)
-		self.write(results)
-		self.finish()
+		if self.get_argument("quotes",None):
+			quotes = self.get_argument("quotes").encode( "utf-8" )
+			quotes = list(quotes.split(","))
+			results = qc.get(quotes,['l1','a'],True)
+			self.write(results)
+			self.finish()
+		else:
+			self.write("Oh hai")
+			self.finish()
 
 class QuoteHandler(tornado.web.RequestHandler):
 	"""
@@ -43,7 +46,7 @@ def main():
 	tornado.options.parse_command_line()
 	application = tornado.web.Application([
         (r"/", MainHandler),
-		(r"/quote/([a-zA-Z]+)",QuoteHandler),
+	(r"/quote/([a-zA-Z]+)",QuoteHandler),
     ])
 	http_server = tornado.httpserver.HTTPServer(application)
 	http_server.listen(options.port)

@@ -35,15 +35,14 @@ import logging
 import sys
 import json
 
-
 #need to test for memcache module and throw error if not found
 try:
 	import memcache
 except ImportError:
 	raise ImportError('python-memcache module is required for this module.')
 
+#setup our logging
 logger = logging.getLogger("python_quote")
-#change level to logging.DEBUG for debug msgs
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
 filehandler = logging.FileHandler('python_quote.log')
@@ -85,6 +84,7 @@ class QuoteCache(object):
 
 		@quotes: list of strings of stock symbols
 		@params: list of yahoo parameters
+		@r_json: return data in JSON format for web use
 		@refresh: bool that determines quotes should be forced to fetch from yahoo
 		returns: a Dictionary of Dictionarys 
 			{'STOCK': {'param' : 'value'}}
@@ -192,8 +192,12 @@ def main():
 	print "Test JSON"
 	print qc.get(['KO'],['l1','a'],True)
 
-	#invalid param 
-	print qc.get(['KO'],['z'])
+	try:
+		#invalid param 
+		print qc.get(['KO'],['z'])
+	except ValueError, e:
+		print e
+		
 
 if __name__ == '__main__':
 	main()	

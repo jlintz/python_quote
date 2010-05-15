@@ -7,10 +7,23 @@ import tornado.ioloop
 import tornado.options
 import tornado.web
 import python_quote
+import logging
 
 from tornado.options import define, options
 
 define("port", default=8888, help="run on the given port", type=int)
+
+logger = logging.getLogger("python_quote")
+logger.setLevel(logging.DEBUG)
+qc = python_quote.QuoteCache()
+
+class Application(tornado.web.Application):
+	def __init__(self):
+		handlers = [
+			(r"/", MainHandler),
+			(r"/quote/([a-zA-Z]+)",QuoteHandler),
+		    ]
+		tornado.web.Application.__init__(self, handlers)
 
 class MainHandler(tornado.web.RequestHandler):
 	"""
@@ -19,7 +32,6 @@ class MainHandler(tornado.web.RequestHandler):
 	"""
 	@tornado.web.asynchronous
 	def get(self):
-		qc = python_quote.QuoteCache()
 		if self.get_argument("quotes",None):
 			quotes = self.get_argument("quotes").encode( "utf-8" )
 			quotes = list(quotes.split(","))
@@ -37,18 +49,13 @@ class QuoteHandler(tornado.web.RequestHandler):
 	"""
 	@tornado.web.asynchronous
 	def get(self,quote):
-		qc = python_quote.QuoteCache()
 		results = qc.get([quote],['l1','a'],True)
 		self.write(results)
 		self.finish()
 
 def main():
 	tornado.options.parse_command_line()
-	application = tornado.web.Application([
-        (r"/", MainHandler),
-	(r"/quote/([a-zA-Z]+)",QuoteHandler),
-    ])
-	http_server = tornado.httpserver.HTTPServer(application)
+	http_server = tornado.httpserver.HTTPServer(Application())
 	http_server.listen(options.port)
 	tornado.ioloop.IOLoop.instance().start()
 

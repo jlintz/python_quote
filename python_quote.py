@@ -33,7 +33,7 @@ import urllib2
 import re
 import logging
 import sys
-
+import json
 
 #need to test for memcache module and throw error if not found
 try:
@@ -41,6 +41,13 @@ try:
 except ImportError:
 	raise ImportError('python-memcache module is required for this module.')
 
+#setup our logging
+logger = logging.getLogger("python_quote")
+logger.setLevel(logging.INFO)
+formatter = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
+filehandler = logging.FileHandler('python_quote.log')
+filehandler.setFormatter(formatter)
+logger.addHandler(filehandler)
 
 def chunk(longlist,chunksize):
 	"""
@@ -58,7 +65,7 @@ class QuoteCache(object):
 	#yahoo allows a max of 50 quote requests per GET
 	MAX_QUOTES = 50
 
-	def __init__(self, servers = ['localhost:11211'], logfile = './python_quote.log', EXPIRE_TIME = 600):
+	def __init__(self, servers = ['localhost:11211'], EXPIRE_TIME = 600):
 		self.servers = servers
 		self.EXPIRE_TIME = EXPIRE_TIME
 		self.cache = memcache.Client(servers)
@@ -69,16 +76,15 @@ class QuoteCache(object):
 		'm8','n','n4','o','p','p1','p2','p5','p6','q','r','r1','r2','r5','r6','r7','s','s1','s7','t1',
 		't6','t7','t8','v','v1','v7','w','w1','w4','x','y'])
 
-		#change level to logging.DEBUG for debug msgs
-		logging.basicConfig(filename=logfile,level=logging.INFO,format='%(asctime)s %(levelname)s %(message)s',)
 
-	def get(self,quotes,params,refresh=False):
+	def get(self,quotes,params,r_json=False,refresh=False):
 		""" 
 		The main function for pulling quotes from Yahoo Finance.  First tries to pull
 		from cache, if not, pulls quotes in groups of 50 for those not cached.
 
 		@quotes: list of strings of stock symbols
 		@params: list of yahoo parameters
+		@r_json: return data in JSON format for web use
 		@refresh: bool that determines quotes should be forced to fetch from yahoo
 		returns: a Dictionary of Dictionarys 
 			{'STOCK': {'param' : 'value'}}
@@ -114,10 +120,10 @@ class QuoteCache(object):
 			for stock in quotes:
 				obj = self.cache.get(stock.upper() + params_str)
 				if obj:
-					logging.debug('Cache HIT %s' % stock)
+					logger.debug('Cache HIT %s' % stock)
 					stock_results[stock.upper()] = obj
 				else:
-					logging.debug('Cache MISS %s' % stock)
+					logger.debug('Cache MISS %s' % stock)
 					stock_miss.append(stock)
 
 		#grab data for stocks we don't have cached
@@ -132,7 +138,7 @@ class QuoteCache(object):
 					#always include symbol param for use in our Dictionary
 					url = self.yahoo_url % (quote_string,'s' + params_str)
 
-					logging.debug('Fetching URL: %s' % url)
+					logger.debug('Fetching URL: %s' % url)
 					ulquote = urllib2.urlopen(url) 
 				except urllib2.error.URLError, e:
 					sys.stderr.write("Error fetching quote from Yahoo" . e.reason)
@@ -145,15 +151,18 @@ class QuoteCache(object):
 					stock_dict = dict(zip(params,stock_attrib[1:]))
 					
 					if refresh:
-						logging.debug('REFRESH forced %s' % symbol)
+						logger.debug('REFRESH forced %s' % symbol)
 
-					logging.debug('SET %s (KEY: %s) to expire in %d' % (symbol,symbol+params_str,self.EXPIRE_TIME))
-					logging.debug('ZIP %s' % stock_dict)
+					logger.debug('SET %s (KEY: %s) to expire in %d' % (symbol,symbol+params_str,self.EXPIRE_TIME))
+					logger.debug('ZIP %s' % stock_dict)
 
 					self.cache.set(symbol + params_str,stock_dict,self.EXPIRE_TIME)
 					stock_results[symbol.upper()] = stock_dict
 
-		return stock_results
+		if r_json == True:
+			return json.dumps(stock_results)
+		else:
+			return stock_results
 
 	
 def main():
@@ -177,10 +186,18 @@ def main():
 	['l1'])
 
 	#test force refresh
+	print qc.get(['KO'],['l1','a'],False,True)
+	
+	#test json
+	print "Test JSON"
 	print qc.get(['KO'],['l1','a'],True)
 
-	#invalid param 
-	print qc.get(['KO'],['z'])
+	try:
+		#invalid param 
+		print qc.get(['KO'],['z'])
+	except ValueError, e:
+		print e
+		
 
 if __name__ == '__main__':
 	main()	

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 """
-Modified the Hello World tornado "webapp"
+A basic setup of demonstrating how python_quote can be used within a webapp
+
+TODO:
+- allow support for options to be passed in?
 """
 import tornado.httpserver
 import tornado.ioloop

@@ -2,8 +2,6 @@
 """
 A basic setup of demonstrating how python_quote can be used within a webapp
 
-TODO:
-- allow support for options to be passed in?
 """
 import tornado.httpserver
 import tornado.ioloop
@@ -32,13 +30,28 @@ class MainHandler(tornado.web.RequestHandler):
 	"""
 		This will handle the default request or a GET request
 		looking for the "quotes" query string
+
+		Note: Probably pointless to use asynchronous as python_quote
+		uses urllib which makes synchronous calls to yahoo finance.
 	"""
 	@tornado.web.asynchronous
 	def get(self):
+
+		options = self.get_argument("options","l1,a").encode("utf-8")
+		options = list(options.split(","))
+		logger.debug(options)
+		
 		if self.get_argument("quotes",None):
-			quotes = self.get_argument("quotes").encode( "utf-8" )
+			quotes = self.get_argument("quotes").encode("utf-8")
 			quotes = list(quotes.split(","))
-			results = qc.get(quotes,['l1','a'],True)
+			try:
+				results = qc.get(quotes,options,True)
+			except ValueError, ve:
+				logger.info(ve)
+				self.write(str(ve))
+				self.finish()
+				return
+
 			self.write(results)
 			self.finish()
 		else:

@@ -48,9 +48,7 @@ class MainHandler(tornado.web.RequestHandler):
 				results = qc.get(quotes,options,True)
 			except ValueError, ve:
 				logger.info(ve)
-				self.write(str(ve))
-				self.finish()
-				return
+				raise tornado.web.HTTPError(500,str(ve))
 
 			self.write(results)
 			self.finish()

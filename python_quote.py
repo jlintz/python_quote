@@ -160,7 +160,10 @@ class QuoteCache(object):
 					stock_results[symbol.upper()] = stock_dict
 
 		if r_json == True:
-			return json.dumps(stock_results)
+			stocks = {}
+			stocks['quotes'] = []
+			stocks['quotes'].append(stock_results)
+			return json.dumps(stocks)
 		else:
 			return stock_results
 
